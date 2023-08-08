@@ -1,24 +1,3 @@
-//--TO DO--//
-//add biome system |Check|
-//add per biome mob and structure system |Halted due to minor priority|
-//add format to cout for inventory and armor |Check|
-//upgrade damage and armor system
-//add objects quantity
-//add a save and load system |Loxo saved the situation once again, thanks|
-//add crafting system |Make a true shaped crafing system|
-//add a a inventory managment system |Check|
-//--TO FIX--//
-//|Check| When you encounter a creeper and after you walk you will die for no reason { 
-	//Possible cause: probably the program subtract 10 hp twice instead it should remove 10 hp per creeper encounter
-		//Possible fix: fix Mattia's brain}
-//|Check| Trying to use for loop to detect with item is inserted into the crafting table {
-	//Result: program crashed
-		//Possible fix: learn how to use for loop or contact loxo}
-//Mattia's knowledge of C++ {
-	//Possible cause: Mattia's bad knowledge about C++
-		//Possible fix: Read a book} 
-
-
 #include <iostream>
 #include <string.h>
 #include <iomanip> 
@@ -33,19 +12,20 @@
 #include <sys/ioctl.h>
 //defines//
 #define DATA_LEN 512
-#define fpath "/tmp/mine-save.bin"
+#define fname "mine-save.sav"
 #define objsnum 6
 #define invnum 9
 #define biomesnum 6
 #define savfln 600
 using namespace std;
 char bufflod[savfln];
+fstream myfile;
 //#pragma pack(4)
 struct plys{
 int hp;
 int exp;
 string inv[invnum]={"air","air","air","air","air","air","air","air","air"};
-string arms[4]={"slot1","slot2","slot3","slot4"};
+string arms[4]={"slot","slot","slot","slot"};
 int armor;
 int dmg;
 string biome;
@@ -65,9 +45,98 @@ break;
 
 }
 
+}
+//insert into armor slots//
+
+void insarms(string item){
+for(int i=0; i<4; i++){
+if(player.arms[i]=="slot"){
+player.arms[i]=item;
+break;
+}
+
+}
+
 } 
-#pragma 
-int savload(int type){
+ 
+//new save system//
+void savload(char type){
+string buffer;
+int numbuffer;
+if(type=='s'){
+myfile.open (fname);
+   for(int i=0; i<invnum; i++){
+  buffer=player.inv[i];
+  myfile <<buffer;
+  myfile <<endl;
+  //myfile <<"-";
+  }
+  
+  //myfile <<"/";
+  //myfile <<endl;
+  for(int i=0; i<4; i++){
+  buffer=player.arms[i];
+  myfile <<buffer;
+  myfile <<endl;
+
+  }
+  //myfile <<"//";
+  //myfile <<endl;
+  
+   myfile <<player.hp;
+  myfile <<endl;
+   myfile <<player.exp;
+  myfile <<endl;
+  
+  myfile.close();
+  cout<<"file created"<<endl;
+}
+if(type=='l'){
+ifstream myfile (fname);
+//myfile.open (fname);
+
+for(int i=0; i<invnum; i++){
+	getline(myfile, buffer);
+	cout<<buffer<<endl;
+	//if(buffer=="-")i++;
+	//if(buffer=="/"){
+	//cout<<"Warning: data is not allined correctly, failed to load"<<endl;
+	//_exit(0);
+	//}
+  player.inv[i]=buffer; 
+  
+  }
+  
+  for(int i=0; i<4; i++){
+	getline(myfile, buffer);
+	cout<<buffer<<endl;
+	//if(buffer=="/")i++;
+	//if(buffer=="//"){
+	//cout<<"Warning: data is not allined correctly, failed to load"<<endl;
+	//_exit(0);
+	//}
+  player.arms[i]=buffer; 
+  
+  }
+  getline(myfile,buffer);
+  numbuffer=stoi(buffer);
+  cout<<numbuffer<<endl;
+  player.hp=numbuffer;
+  getline(myfile,buffer);
+  numbuffer=stoi(buffer);
+  cout<<numbuffer<<endl;
+  player.exp=numbuffer;
+  
+	cout<<"file loaded"<<endl;
+	 myfile.close();
+ 
+
+}
+}
+
+//old save system//
+//#pragma 
+/*int savload(int type){
 char* p=new char[player.inv[invnum].length()+1]; 
 int fid= open(fpath, O_RDWR+O_CREAT,S_IRWXU);
     
@@ -103,6 +172,7 @@ strcpy((char*)p,(char*)bufflod[k]);
 
 return 0;
 }
+*/
   
 
 //game function//
@@ -158,8 +228,8 @@ if(player.arms[2]=="air")player.armor=player.armor+0;
 if(player.arms[3]=="air")player.armor=player.armor+0;
 //leather//
 if(player.arms[0]=="let_helmet")player.armor=player.armor+lhlpr;
-if(player.arms[1]=="let_leggings")player.armor=player.armor+lchpr;
-if(player.arms[2]=="let_chestplate")player.armor=player.armor+llgpr;
+if(player.arms[1]=="let_chestplate")player.armor=player.armor+lchpr;
+if(player.arms[2]=="let_leggings")player.armor=player.armor+llgpr;
 if(player.arms[3]=="let_boots")player.armor=player.armor+lbtpr;
 while(true){
 srand ( time(NULL) );
@@ -327,18 +397,19 @@ break;
 
 }
 case 4:{
-cout<<"type 's' to save or 'l' to load\n ATTENTION this feature is under development, for now only the inventory will get saved"<<endl;
+cout<<"type 's' to save or 'l' to load\n (ATTENTION this feature is under development)"<<endl;
 cin>>action;
-if(action=='s'){
-savload(1);
+savload(action);
+//if(action=='s'){
+//savload(1);
+//}
 
-}
-
-if(action=='l')
-savload(2);
+//if(action=='l')
+//savload(2);
+break;
 }
 case 5:{
-ifstream testread("mine-save.bin");
+ifstream testread("mine-save.sav");
 FILE * pFile;
 string output;
 int z;
@@ -387,17 +458,10 @@ for(int i=0; i<invnum; i++)
 player.inv[i]="air";
 }
 if(z==5){
-//Save to binary using copy//
-//FILE * pFile;
-  //char buffer[] = { 't' , 'e' , 's' , 't' };
-  /*
-  copy(begin(player.inv), end(player.inv), begin(buffinv));
-  //copy(begin(player.arms), end(player.arms), begin(buffarmor));
-  pFile = fopen ("mine-save-c.bin", "wb");
-  fwrite (buffinv , sizeof(string), sizeof(buffinv), pFile);
-  //fwrite (buffarmor , sizeof(string), sizeof(buffarmor), pFile);
-  fclose (pFile);
-*/
+insarms("let_helmet");
+insarms("let_chestplate");
+insarms("let_leggings");
+insarms("let_boots");
 }
 if(z==6){
 //print save file in the terminal//
