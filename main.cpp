@@ -13,13 +13,22 @@
 //defines//
 #define DATA_LEN 512
 #define fname "mine-save.sav"
+#define sname "game-config.cfg"
+#define wsword "Wooden-sword"
 #define objsnum 6
 #define invnum 9
 #define biomesnum 6
 #define savfln 600
+//leater armor//
+#define lh "let_helmet"
+#define lc "let_chestplate"
+#define ll "let_leggings"
+#define lb "let_boots"
+
 using namespace std;
 char bufflod[savfln];
 fstream myfile;
+bool debug=false;
 //#pragma pack(4)
 struct plys{
 int hp;
@@ -35,6 +44,7 @@ struct mobs{
 int mdmg;
 int resis;
 }creeper,zombie,husk;
+string crftb[9]={"slot0","slot1","slot2","slot3","slot4","slot5","slot6","slot7","slot8"};
 //insert into inventory//
 void insinv(string item, int len){
 for(int i=0; i<len; i++){
@@ -47,7 +57,6 @@ break;
 
 }
 //insert into armor slots//
-
 void insarms(string item){
 for(int i=0; i<4; i++){
 if(player.arms[i]=="slot"){
@@ -58,13 +67,76 @@ break;
 }
 
 } 
+//clean the crafting table// 
+void craftclean(){
+crftb[0]="slot0";
+crftb[1]="slot1";
+crftb[2]="slot2";
+crftb[3]="slot3";
+crftb[4]="slot4";
+crftb[5]="slot5";
+crftb[6]="slot6";
+crftb[7]="slot7";
+crftb[8]="slot8";
+
+}
+
+//check items in the crafting table//
+void crafting(){
+for(int i=0; i<9; i++){
+if(crftb[i]=="Log"){
+insinv("Planks",invnum);
+cout<<"crafted planks"<<endl;
+craftclean();
+}
+}
+
+if(crftb[7]=="Planks" && crftb[4]=="Planks"){
+insinv("Stick",invnum);
+cout<<"crafted stick"<<endl;
+craftclean();
+}
+
+if(crftb[7]=="Stick" && crftb[4]=="Planks" && crftb[1]=="Planks"){
+player.sword=wsword;
+cout<<"crafted wooden sword"<<endl;
+craftclean();
+}
+
+if(crftb[3]=="Leather" && crftb[0]=="Leather" && crftb[1]=="Leather" && crftb[2]=="Leather" && crftb[5]=="Leather"){
+insarms(lh);
+cout<<"crafted leather helmet"<<endl;
+craftclean();
+}
+
+if(crftb[0]=="Leather" && crftb[3]=="Leather" && crftb[6]=="Leather" && crftb[7]=="Leather" && crftb[4]=="Leather" && crftb[8]=="Leather" && crftb[5]=="Leather" && crftb[2]=="Leather"){
+insarms(lc);
+cout<<"crafted leather chestplate"<<endl;
+craftclean();
+}
+if(crftb[6]=="Leather" && crftb[3]=="Leather" && crftb[0]=="Leather" && crftb[1]=="Leather" && crftb[2]=="Leather" && crftb[5]=="Leather" && crftb[8]=="Leather"){
+insarms(ll);
+cout<<"crafted leather leggings"<<endl;
+craftclean();
+}
+if(crftb[6]=="Leather" && crftb[3]=="Leather" && crftb[5]=="Leather" && crftb[8]=="Leather"){
+insarms(lb);
+cout<<"crafted leather boots"<<endl;
+craftclean();
+}
+
+}
+
+
+
+
  
 //new save system//
 void savload(char type){
 string buffer;
-int numbuffer;
+int numbuffer=0;
 if(type=='s'){
-myfile.open (fname);
+myfile.open(fname, ios::out);
    for(int i=0; i<invnum; i++){
   buffer=player.inv[i];
   myfile <<buffer;
@@ -82,11 +154,13 @@ myfile.open (fname);
   }
   //myfile <<"//";
   //myfile <<endl;
-  
+  myfile <<player.sword;
+  myfile <<endl;
    myfile <<player.hp;
   myfile <<endl;
    myfile <<player.exp;
   myfile <<endl;
+  
   
   myfile.close();
   cout<<"file created"<<endl;
@@ -118,14 +192,21 @@ for(int i=0; i<invnum; i++){
   player.arms[i]=buffer; 
   
   }
+  cout<<buffer<<endl;
+  getline(myfile,buffer);
+  cout<<buffer<<endl;
+  player.sword=buffer;
+  
   getline(myfile,buffer);
   numbuffer=stoi(buffer);
   cout<<numbuffer<<endl;
   player.hp=numbuffer;
+  
   getline(myfile,buffer);
   numbuffer=stoi(buffer);
   cout<<numbuffer<<endl;
   player.exp=numbuffer;
+  
   
 	cout<<"file loaded"<<endl;
 	 myfile.close();
@@ -195,7 +276,6 @@ int stptot;
 int act;
 int invsl;
 int crfsl;
-bool debug=true;
 char y;
 char action;
 char actin;
@@ -212,7 +292,7 @@ int ichpr=6; //chestplate
 int ilgpr=5; //leggings
 int ibtpr=4; //boots
 
-string crftb[9]={"slot0","slot1","slot2","slot3","slot4","slot5","slot6","slot7","slot8"};
+
 string objs[objsnum]={"Tree","Creeper","Cow","Water","Zombie","Lava"};
 //string *pobjs =objs;
 string biomes[biomesnum]={"Plains","Desert","Forest","Hills","Ice-Peeks","Dark-Forest"};
@@ -221,21 +301,25 @@ string buffarmor[4];
 string loadinv[invnum];
 
 //cout<<"tutorial: to play type a number of steps\n every ten steps you may find something"<<endl;
-//armor calculator//
-if(player.arms[0]=="air")player.armor=player.armor+0;
-if(player.arms[1]=="air")player.armor=player.armor+0;
-if(player.arms[2]=="air")player.armor=player.armor+0;
-if(player.arms[3]=="air")player.armor=player.armor+0;
-//leather//
-if(player.arms[0]=="let_helmet")player.armor=player.armor+lhlpr;
-if(player.arms[1]=="let_chestplate")player.armor=player.armor+lchpr;
-if(player.arms[2]=="let_leggings")player.armor=player.armor+llgpr;
-if(player.arms[3]=="let_boots")player.armor=player.armor+lbtpr;
+
 while(true){
 srand ( time(NULL) );
 if(debug==true)cout << "\033[1;31mATTENTION\033[0m\ndebug menu enabled\ntype 5 to access it"<<endl;
-cout<<"type:\n[1] Walk\n[2] Browse and manage the invetory\n[3] Crafting table\n[4]Save or load (only player invemtory for now)"<<endl;
+cout<<"type:\n[1] Walk\n[2] Browse and manage the invetory\n[3] Crafting table\n[4] Save or load"<<endl;
+//armor calculator//
+//if(player.arms[0]=="air")player.armor=player.armor+0;
+//if(player.arms[1]=="air")player.armor=player.armor+0;
+//if(player.arms[2]=="air")player.armor=player.armor+0;
+//if(player.arms[3]=="air")player.armor=player.armor+0;
+//leather//
+if(player.arms[0]==lh)player.armor=player.armor+lhlpr;
+if(player.arms[1]==lc)player.armor=player.armor+lchpr;
+if(player.arms[2]==ll)player.armor=player.armor+llgpr;
+if(player.arms[3]==lb)player.armor=player.armor+lbtpr;
 
+if(player.sword.empty())player.sword="bare-fists";
+if(player.sword==wsword)player.dmg=4;
+if(debug==true)cout<<player.sword<<endl;
 cin>>act;
 switch(act){
 case 1:{
@@ -243,14 +327,15 @@ case 1:{
 int RandDis = rand() % 10;
 int RandBiomes = rand() % biomesnum;
 int RandDrop = rand() % 5;
-if(player.sword.empty())player.sword="bare-fists";
+
+
 if(player.biome.empty()){
 RandBiomes = rand() % biomesnum;
 player.biome=biomes[RandBiomes];
 }
 cout<<"type 'w' to walk and you may find something"<<endl;
 cout<<"current biome: "<<player.biome<<endl;
-cout<<"your current sword: "<<player.sword<<endl;
+cout<<"your current weapon: "<<player.sword<<endl;
 cin>>action;
 if(action=='m')return;
 if(player.hp<=0){
@@ -306,7 +391,7 @@ cout<<"now you have "<<player.hp<<" health points"<<endl;
 }
 if(objs[RandIndex]=="Cow"){
 RandDrop;
-cout<<"do you want to kill the cow to obtain one leather pice?\nand also you might obatain a raw beef piece?"<<endl;
+cout<<"do you want to kill the cow to obtain one leather pice?\nand also you might obtain a raw beef piece?"<<endl;
 cin>>y;
 if(RandDrop==5){
 cout<<"you obtain a raw beef piece"<<endl;
@@ -332,13 +417,15 @@ while(true){
 //player invemtory//
 cout<<"Player health points: "<<player.hp<<endl;
 cout<<"PLayer damage points: "<<player.dmg<<endl;
+cout<<"PLayer weapon: "<<player.sword<<endl;
 cout<<"Player inventory "<<endl;
 for (int i=0; i<invnum; i++) 
-    cout << player.inv[i]<<endl;
+    cout <<i<<": "<< player.inv[i]<<endl;
 cout<<"Player armor points: "<<player.armor<<endl;
 cout<<"Player armor"<<endl;
 for (int i=0; i<4; i++) 
-cout << player.arms[i]<<",";
+cout << player.arms[i]<<"; ";
+cout<<endl;
 //cout<<player.arms[0]<<","<<player.arms[1]<<","<<player.arms[2]<<","<<player.arms[3]<<","<<player.arms[4]<<endl;
 cout<<"inventory managment:\n'e' allows you to eat and regain health\ntype 'c' to exit"<<endl;
 cin>>action;
@@ -350,7 +437,7 @@ if(player.inv[invsl]=="Raw-Beef"){
 player.inv[invsl]="air";
 if(player.hp<20){
 player.hp=player.hp+5;
-cout<<"you eat the "<<player.inv[invsl]<<"pice and you regeberate 5 hp"<<endl;
+cout<<"you eat the "<<player.inv[invsl]<<"pice and you regebnrate 5 hp"<<endl;
 }
 if(player.hp==20)cout<<"no need to eat your health is full"<<endl;
 }else cout<<"you can not eat "<< player.inv[invsl]<<endl;
@@ -360,6 +447,11 @@ if(action=='c')break;
 break;
 }
 case 3:{
+
+while(true){
+cout<<"Player inventory:"<<endl;
+for (int i=0; i<invnum; i++) cout <<i<<": "<< player.inv[i]<<"; ";
+ cout<<endl;
 cout<<"crafting table:"<<endl;
 
     cout <<setw(3)<<crftb[0]<<","<<setw(3)<<crftb[1]<<","<<setw(3)<<crftb[2]<<endl;
@@ -381,17 +473,15 @@ cout<<"crafting table:"<<endl;
     cout <<setw(3)<<crftb[3]<<","<<setw(3)<<crftb[4]<<","<<setw(3)<<crftb[5]<<endl;
     cout <<setw(3)<<crftb[6]<<","<<setw(3)<<crftb[7]<<","<<setw(3)<<crftb[8]<<endl;
 
-for(int i=0; i<9; i++){
-if(crftb[i]=="Log"){
-insinv("Planks",invnum);
-cout<<"crafted planks"<<endl;
-}
-if((crftb[i]=="Planks")&&(crftb[i]=="Planks")&&(crftb[i]=="Planks")){
-insinv("Wooden-sword",invnum); //temporaney i want a shaped crafting for sword
-player.sword=="Wooden-sword";
-}
 
+crafting();
+//if((crftb[i]=="Planks")&&(crftb[i]=="Planks")&&(crftb[i]=="Planks")){
+//insinv("Wooden-sword",invnum); //temporaney i want a shaped crafting for sword
+//player.sword="Wooden-sword";
+//}
 }
+craftclean();
+
 
 break;
 
@@ -437,6 +527,7 @@ insinv("Planks",invnum);
 insinv("Planks",invnum);
 insinv("Raw-Beef",invnum);
 insinv("Log",invnum);
+player.sword=wsword;
 }
 if(z==1)player.hp=player.hp-10;
 if(z==2){
@@ -506,9 +597,11 @@ pFile = fopen ("mine-save.bin", "wb");
 
 int main(){
 int sel;
+char k;
+string buffer;
 cout<<"Welcome to Mattia's Software minetext"<<endl;
 while(true){
-cout<<"--Minetext--\n[1] Singleplayer\n[2] Credits\n[3] Comands list"<<endl;
+cout<<"--Minetext--\n[1] Singleplayer\n[2] Credits\n[3] Comands list\n[4] Settings \n[5] Quit"<<endl;
 cin>>sel;
 switch(sel){
 case 1: 
@@ -524,10 +617,42 @@ break;
 }
 case 3:
 {
-cout<<"List of useful comands:\n'w': allows you to walk a random number of steps\n'm':allows you to return to the main menu\n'e':allows you to eat and regain health\n to use it you need to type 'e' and then the inventory slot were the food is contained\n you can type those comands when you choose the walk option during the game"<<endl;
+cout<<"List of useful comands:\n'w': allows you to walk a random number of steps\n'm':allows you to return to the main menu\n'e':allows you to eat and regain health\n to use it you need to type 'e' and then the inventory slot were the food is contained\n'c': allows to quit from inventory managment and form crafting table"<<endl;
 
 
 break;
+}
+case 4:
+{
+cout<<"Do you wish to:\n[g]Generate the settings file\n[l]Load the setting file\n[q]Quit to menu"<<endl;
+cin>>k;
+
+if(k=='g'){
+myfile.open(sname, ios::out);
+myfile <<"debug:1";
+//myfile <<1;
+myfile <<endl;
+cout<<"file created"<<endl;
+myfile.close();
+
+}
+
+if(k=='l'){
+ifstream myfile (sname);
+getline(myfile, buffer);
+cout<<buffer<<endl;
+if(buffer=="debug:1")debug=true;
+if(buffer=="debug:0")debug=false;
+}
+
+
+
+break;
+}
+
+case 5:
+{
+exit(0);
 }
 
 
