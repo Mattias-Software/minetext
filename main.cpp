@@ -10,6 +10,7 @@
 #include <termios.h> // Contains POSIX terminal control definitions
 #include <unistd.h> // write(), read(), close()
 #include <sys/ioctl.h>
+#include "combat.h"
 //defines//
 #define DATA_LEN 512
 #define fname "mine-save.sav"
@@ -29,6 +30,7 @@ using namespace std;
 char bufflod[savfln];
 fstream myfile;
 bool debug=false;
+bool expe=false;
 //#pragma pack(4)
 struct plys{
 int hp;
@@ -39,8 +41,11 @@ int armor;
 int dmg;
 string biome;
 string sword;
+bool poison=false;
+bool fire=false;
 }player;
 struct mobs{
+int mhp;
 int mdmg;
 int resis;
 }creeper,zombie,husk;
@@ -268,7 +273,9 @@ int dmgt=0;
 //Creeper
 creeper.mdmg=10;
 //Zombie
-zombie.mdmg=2;
+zombie.mdmg=3;
+zombie.mhp=20;
+
 //Husk
 husk.mdmg=3;
 //variables//
@@ -283,14 +290,15 @@ char actcr;
 //armor types and protection values//
 //Leather
 int lhlpr=1; //helmet
-int lchpr=3; //chestplate
-int llgpr=2; //leggings
+int lchpr=1; //chestplate
+int llgpr=1; //leggings
 int lbtpr=1; //boots
 //Iron
 int ihlpr=2; //helmet
 int ichpr=6; //chestplate
 int ilgpr=5; //leggings
 int ibtpr=4; //boots
+//mob stuff//
 
 
 string objs[objsnum]={"Tree","Creeper","Cow","Water","Zombie","Lava"};
@@ -312,10 +320,13 @@ cout<<"type:\n[1] Walk\n[2] Browse and manage the invetory\n[3] Crafting table\n
 //if(player.arms[2]=="air")player.armor=player.armor+0;
 //if(player.arms[3]=="air")player.armor=player.armor+0;
 //leather//
+
+player.armor=0;
 if(player.arms[0]==lh)player.armor=player.armor+lhlpr;
 if(player.arms[1]==lc)player.armor=player.armor+lchpr;
 if(player.arms[2]==ll)player.armor=player.armor+llgpr;
 if(player.arms[3]==lb)player.armor=player.armor+lbtpr;
+
 
 if(player.sword.empty())player.sword="bare-fists";
 if(player.sword==wsword)player.dmg=4;
@@ -323,6 +334,7 @@ if(debug==true)cout<<player.sword<<endl;
 cin>>act;
 switch(act){
 case 1:{
+while(true){
 //core gameplay loop//
 int RandDis = rand() % 10;
 int RandBiomes = rand() % biomesnum;
@@ -333,14 +345,15 @@ if(player.biome.empty()){
 RandBiomes = rand() % biomesnum;
 player.biome=biomes[RandBiomes];
 }
-cout<<"type 'w' to walk and you may find something"<<endl;
+cout<<"type 'w' to walk and you may find something or if you want to display the action panel press 'i'"<<endl;
 cout<<"current biome: "<<player.biome<<endl;
 cout<<"your current weapon: "<<player.sword<<endl;
 cin>>action;
+if(action=='i')break;
 if(action=='m')return;
 if(player.hp<=0){
 cout<<"you died!"<<endl;
-exit(EXIT_SUCCESS);
+return;
 }
 if(action=='w'){
 int RandStp = rand() % 10;
@@ -370,6 +383,10 @@ if(y=='y')insinv("Log",invnum);//player.inv[RandIndexi]="Log";
 
 }
 if(objs[RandIndex]=="Zombie"){
+if(expe==true){
+player.hp=fight("Zombie",player.sword, player.poison, player.fire, zombie.mhp, zombie.mdmg, player.hp, player.dmg, player.armor);
+break;
+}
 if(player.sword=="bare-fists"){
 player.hp=player.hp-zombie.mdmg;
 cout<<"you punch the zombie in the face, but is not enough to stop it"<<endl;
@@ -408,6 +425,7 @@ cout<<"you found a water pond"<<endl;
 
 }
 
+}
 }
 break;
 }
@@ -458,14 +476,20 @@ cout<<"crafting table:"<<endl;
     cout <<setw(3)<<crftb[3]<<","<<setw(3)<<crftb[4]<<","<<setw(3)<<crftb[5]<<endl;
     cout <<setw(3)<<crftb[6]<<","<<setw(3)<<crftb[7]<<","<<setw(3)<<crftb[8]<<endl;
 
-cout<<"to insert items into the crafting table\nyou need to type the 'i' followed by the inventory slot (remeber slot ranged from 0 to 8)\n followed by the crafting table (that also range from 0 to 8)  "<<endl;
+cout<<"to insert items into the crafting table\nyou need to type the 'i' followed by the inventory slot (remeber slot ranged from 0 to 8)\n followed by the crafting table (that also range from 0 to 8)\n if you want to retrive objects from the crafting table type 'r' followed by the inventory slot (remeber slot ranged from 0 to 8)\n followed by the crafting table (that also range from 0 to 8)"<<endl;
 cin>>actin>>invsl>>crfsl;
 if(actin=='i'){
 crftb[crfsl]=player.inv[invsl];
 player.inv[invsl]="air";
-
 }
+
+if(actin=='r'){
+player.inv[invsl]=crftb[crfsl];
+craftclean();
+}
+
 if(actin=='c')break;
+
 
 cout<<"crafting table:"<<endl;
 //for (int i = 9 - 1; i >= 0; i--) 
@@ -499,7 +523,7 @@ savload(action);
 break;
 }
 case 5:{
-ifstream testread("mine-save.sav");
+ifstream testread(fname);
 FILE * pFile;
 string output;
 int z;
@@ -519,7 +543,7 @@ int sizhp=sizeof(player.hp);
 for(int i=0;i>4;i++)buffarmor[i]="air";
 
 if(debug==true){
-cout<<"debug menu:\n[1]remove ten health points\n[2]size of the struct and arrays in it with their alignment\n[3]give you a bunch of stuff\n[4]clear your inventory\n[5]no fuction \n[6]dump the save file into the console\n[7]no function"<<endl;
+cout<<"debug menu:\n[1]remove ten health points\n[2]size of the struct and arrays in it with their alignment\n[3]give you a bunch of stuff\n[4]clear your inventory\n[5]give lether armor \n[6]dump the save file into the console\n[7]trigger zombie fight"<<endl;
 cin>>z;
 if(z==3){
 insinv("Planks",invnum);
@@ -566,16 +590,8 @@ testread.close();
 }
 
 if(z==7){
-//Save to binary using memcpy//
-/*
-memcpy(buffinv,player.inv,sizeinv);
-memcpy(buffarmor,player.arms,sizearmor);
-
-pFile = fopen ("mine-save.bin", "wb");
-  fwrite (buffinv , sizeof(string), sizeof(buffinv), pFile);
-  //fwrite (buffarmor , sizeof(string), sizeof(buffarmor), pFile);
-  fclose (pFile);
-*/
+player.hp=fight("Zombie",player.sword, player.poison, player.fire, zombie.mhp, zombie.mdmg, player.hp, player.dmg, player.armor);
+break;
 }
 
 
@@ -585,7 +601,7 @@ pFile = fopen ("mine-save.bin", "wb");
 
 
 
-
+break;
 }
 }
 }	
@@ -629,8 +645,9 @@ cin>>k;
 
 if(k=='g'){
 myfile.open(sname, ios::out);
-myfile <<"debug:1";
-//myfile <<1;
+myfile <<"debug:0";
+myfile <<endl;
+myfile <<"experimental-features:0";
 myfile <<endl;
 cout<<"file created"<<endl;
 myfile.close();
@@ -643,6 +660,10 @@ getline(myfile, buffer);
 cout<<buffer<<endl;
 if(buffer=="debug:1")debug=true;
 if(buffer=="debug:0")debug=false;
+getline(myfile, buffer);
+cout<<buffer<<endl;
+if(buffer=="experimental-features:1")expe=true;
+if(buffer=="experimental-features:0")expe=false;
 }
 
 
